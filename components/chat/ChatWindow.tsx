@@ -59,7 +59,6 @@ export default function ChatWindow() {
     checkAuth()
   }, [])
 
-  // Keep input focused after sending on mobile
   useEffect(() => {
     if (!loading) {
       inputRef.current?.focus()
@@ -73,7 +72,6 @@ export default function ChatWindow() {
     setMessages((prev) => [...prev, { role: 'user', content: userMsg }])
     setLoading(true)
 
-    // Scroll to bottom immediately after user message
     setTimeout(() => {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, 50)
@@ -144,7 +142,6 @@ export default function ChatWindow() {
       bottom: 0,
     }}>
 
-      {/* Navbar */}
       <Navbar />
 
       {/* Stage progress bar */}
@@ -246,48 +243,47 @@ export default function ChatWindow() {
         borderTop: '1px solid #1e293b',
         flexShrink: 0,
       }}>
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          alignItems: 'center',
-          backgroundColor: '#1e293b',
-          borderRadius: '24px',
-          padding: '6px 6px 6px 16px',
-          border: '1px solid #334155',
-        }}>
-         <input
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              sendMessage()
-            }
-          }}
-          placeholder="Message..."
-          disabled={loading || generatingBlueprint}
-          type="text"
-          inputMode="text"
+        <form
+          onSubmit={(e) => { e.preventDefault(); sendMessage() }}
           autoComplete="off"
-          autoCorrect="on"
-          autoCapitalize="sentences"
-          spellCheck={true}
-          data-form-type="other"
-          data-lpignore="true"
           style={{
-            flex: 1,
-            background: 'none',
-            border: 'none',
-            color: 'white',
-            fontSize: '16px',
-            outline: 'none',
-            minWidth: 0,
-            opacity: loading || generatingBlueprint ? 0.5 : 1,
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center',
+            backgroundColor: '#1e293b',
+            borderRadius: '24px',
+            padding: '6px 6px 6px 16px',
+            border: '1px solid #334155',
           }}
-/>
+        >
+          <input type="password" style={{ display: 'none' }} autoComplete="new-password" readOnly />
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            type="text"
+            inputMode="text"
+            autoComplete="off"
+            autoCorrect="on"
+            autoCapitalize="sentences"
+            spellCheck={true}
+            data-form-type="other"
+            data-lpignore="true"
+            placeholder="Message..."
+            disabled={loading || generatingBlueprint}
+            style={{
+              flex: 1,
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '16px',
+              outline: 'none',
+              minWidth: 0,
+              opacity: loading || generatingBlueprint ? 0.5 : 1,
+            }}
+          />
           <button
-            onClick={sendMessage}
+            type="submit"
             disabled={loading || generatingBlueprint || !input.trim()}
             style={{
               backgroundColor: input.trim() && !loading ? '#2563eb' : '#1e3a5f',
@@ -309,7 +305,7 @@ export default function ChatWindow() {
               <path d="M22 2L15 22L11 13L2 9L22 2Z" />
             </svg>
           </button>
-        </div>
+        </form>
       </div>
 
     </div>
