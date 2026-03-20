@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "tailwindcss";
 
 @source "../components/**/*.{ts,tsx}";
 @source "../app/**/*.{ts,tsx}";
@@ -20,6 +19,3 @@
     display: flex !important;
   }
 }
-
-@source "../components/**/*.{ts,tsx}";
-@source "../app/**/*.{ts,tsx}";
