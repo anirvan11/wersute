@@ -46,16 +46,16 @@ export default function ChatWindow() {
   }, [messages])
 
   useEffect(() => {
-  async function checkAuth() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      window.location.href = '/login'
-      return
+    async function checkAuth() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        window.location.href = '/login'
+        return
+      }
+      setUserId(session.user.id)
     }
-    setUserId(user.id)
-  }
-  checkAuth()
-}, [])
+    checkAuth()
+  }, [])
 
   async function sendMessage() {
     if (!input.trim() || loading) return
@@ -117,7 +117,13 @@ export default function ChatWindow() {
   const stageIdx = STAGES.indexOf(stage)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#020817' }}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100dvh',
+      backgroundColor: '#020817',
+      overflow: 'hidden',
+    }}>
 
       {/* Navbar */}
       <Navbar />
@@ -127,12 +133,18 @@ export default function ChatWindow() {
         display: 'flex',
         alignItems: 'center',
         gap: '6px',
-        padding: '10px 24px',
+        padding: '10px 20px',
         backgroundColor: '#0f172a',
         borderBottom: '1px solid #1e293b',
         flexShrink: 0,
       }}>
-        <span style={{ color: '#475569', fontSize: '12px', marginRight: '8px', whiteSpace: 'nowrap' }}>
+        <span style={{
+          color: '#475569',
+          fontSize: '12px',
+          marginRight: '8px',
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
+        }}>
           {STAGE_LABELS[stage]}
         </span>
         {STAGES.map((s, i) => (
@@ -150,24 +162,26 @@ export default function ChatWindow() {
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        padding: '24px 16px',
+        padding: '16px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '16px'
+        gap: '12px',
+        WebkitOverflowScrolling: 'touch',
       }}>
         {messages.map((m, i) => (
           <div key={i} style={{
             display: 'flex',
-            justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start'
+            justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
           }}>
             <div style={{
-              maxWidth: '520px',
+              maxWidth: '80%',
               padding: '12px 16px',
               borderRadius: m.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
               backgroundColor: m.role === 'user' ? '#2563eb' : '#1e293b',
               color: m.role === 'user' ? 'white' : '#e2e8f0',
-              fontSize: '14px',
+              fontSize: '15px',
               lineHeight: '1.6',
+              wordBreak: 'break-word',
             }}>
               {m.content}
             </div>
@@ -203,12 +217,12 @@ export default function ChatWindow() {
 
       {/* Input */}
       <div style={{
-        padding: '16px',
+        padding: '12px 16px',
         backgroundColor: '#0f172a',
         borderTop: '1px solid #1e293b',
         flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -222,9 +236,10 @@ export default function ChatWindow() {
               color: 'white',
               padding: '12px 16px',
               borderRadius: '12px',
-              fontSize: '14px',
+              fontSize: '16px',
               outline: 'none',
               opacity: loading || generatingBlueprint ? 0.5 : 1,
+              minWidth: 0,
             }}
           />
           <button
@@ -233,13 +248,15 @@ export default function ChatWindow() {
             style={{
               backgroundColor: '#2563eb',
               color: 'white',
-              padding: '12px 24px',
+              padding: '12px 20px',
               borderRadius: '12px',
               fontWeight: '600',
-              fontSize: '14px',
+              fontSize: '15px',
               border: 'none',
               cursor: loading || generatingBlueprint || !input.trim() ? 'not-allowed' : 'pointer',
               opacity: loading || generatingBlueprint || !input.trim() ? 0.5 : 1,
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
             }}
           >
             Send
