@@ -1,5 +1,5 @@
 'use client'
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter, useSearchParams } from 'next/navigation'
 
@@ -14,6 +14,29 @@ function LoginForm() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // If already logged in, redirect away from login page
+  useEffect(() => {
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+
+      if (userData?.role === 'admin') {
+        window.history.replaceState(null, '', '/admin')
+        window.location.replace('/admin')
+        } else {
+        window.history.replaceState(null, '', next || '/chat')
+        window.location.replace(next || '/chat')
+        }
+    }
+    checkSession()
+  }, [])
+
   async function handleSubmit() {
     if (!email || !password) return
     setLoading(true)
@@ -25,7 +48,7 @@ function LoginForm() {
         if (data.user) {
           await supabase.from('users').insert({ id: data.user.id, email, role: 'founder' })
         }
-        router.push(next || '/chat')
+        router.replace(next || '/chat')
       } else {
         const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
@@ -37,9 +60,9 @@ function LoginForm() {
           .single()
 
         if (userData?.role === 'admin') {
-          window.location.href = '/admin'
+          router.replace('/admin')
         } else {
-          window.location.href = next || '/chat'
+          router.replace(next || '/chat')
         }
       }
     } catch (err: any) {
@@ -50,15 +73,14 @@ function LoginForm() {
   }
 
   async function handleGoogleLogin() {
-  setGoogleLoading(true)
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
-      skipBrowserRedirect: false,
-    }
-  })
-}
+    setGoogleLoading(true)
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      }
+    })
+  }
 
   function toggleMode() {
     setIsSignUp(!isSignUp)

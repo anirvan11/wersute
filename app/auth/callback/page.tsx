@@ -5,15 +5,13 @@ import { supabase } from '@/lib/supabase'
 export default function AuthCallbackPage() {
   useEffect(() => {
     async function handleCallback() {
-      // Get session - Supabase automatically handles the hash/code
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session) {
-        // Wait a moment and try again - session might still be loading
         setTimeout(async () => {
           const { data: { session: retrySession } } = await supabase.auth.getSession()
           if (!retrySession) {
-            window.location.href = '/login'
+            window.location.replace('/login')
             return
           }
           await handleUser(retrySession.user.id, retrySession.user.email!)
@@ -25,7 +23,6 @@ export default function AuthCallbackPage() {
     }
 
     async function handleUser(userId: string, email: string) {
-      // Insert user if not exists
       const { data: existing } = await supabase
         .from('users')
         .select('id')
@@ -40,18 +37,17 @@ export default function AuthCallbackPage() {
         })
       }
 
-      // Get role and redirect
       const { data: userData } = await supabase
         .from('users')
         .select('role')
         .eq('id', userId)
         .single()
 
-      if (userData?.role === 'admin') {
-        window.location.href = '/admin'
-      } else {
-        window.location.href = '/chat'
-      }
+      const destination = userData?.role === 'admin' ? '/admin' : '/chat'
+      
+      // Replace entire history with just the destination
+      window.history.replaceState(null, '', destination)
+      window.location.replace(destination)
     }
 
     handleCallback()
@@ -65,9 +61,7 @@ export default function AuthCallbackPage() {
       alignItems: 'center',
       justifyContent: 'center'
     }}>
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ color: '#475569', fontSize: '14px' }}>Signing you in...</p>
-      </div>
+      <p style={{ color: '#475569', fontSize: '14px' }}>Signing you in...</p>
     </div>
   )
 }
