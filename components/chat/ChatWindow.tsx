@@ -49,17 +49,17 @@ export default function ChatWindow() {
   }, [messages])
 
   useEffect(() => {
-    async function checkAuth() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        window.location.href = '/login'
-        return
-      }
-      setUserId(session.user.id)
-      setAuthChecked(true)
+  async function checkAuth() {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      router.replace('/login')
+      return
     }
-    checkAuth()
-  }, [])
+    setUserId(session.user.id)
+    setAuthChecked(true)
+  }
+  checkAuth()
+}, [])
 
   useEffect(() => {
     if (!loading && authChecked) {
