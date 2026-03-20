@@ -27,6 +27,7 @@ const STAGE_LABELS: Record<string, string> = {
 
 export default function ChatWindow() {
   const router = useRouter()
+  const [authChecked, setAuthChecked] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -55,15 +56,16 @@ export default function ChatWindow() {
         return
       }
       setUserId(session.user.id)
+      setAuthChecked(true)
     }
     checkAuth()
   }, [])
 
   useEffect(() => {
-    if (!loading) {
+    if (!loading && authChecked) {
       inputRef.current?.focus()
     }
-  }, [loading])
+  }, [loading, authChecked])
 
   async function sendMessage() {
     if (!input.trim() || loading) return
@@ -124,6 +126,20 @@ export default function ChatWindow() {
       ])
       setGeneratingBlueprint(false)
     }
+  }
+
+  if (!authChecked) {
+    return (
+      <div style={{
+        height: '100dvh',
+        backgroundColor: '#020817',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div style={{ color: '#475569', fontSize: '14px' }}>Loading...</div>
+      </div>
+    )
   }
 
   const stageIdx = STAGES.indexOf(stage)
@@ -307,7 +323,6 @@ export default function ChatWindow() {
           </button>
         </form>
       </div>
-
     </div>
   )
 }
