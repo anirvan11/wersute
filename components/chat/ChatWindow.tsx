@@ -40,6 +40,8 @@ export default function ChatWindow() {
   const [stage, setStage] = useState('DISCOVERY')
   const [userId, setUserId] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const messagesRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -57,12 +59,24 @@ export default function ChatWindow() {
     checkAuth()
   }, [])
 
+  // Keep input focused after sending on mobile
+  useEffect(() => {
+    if (!loading) {
+      inputRef.current?.focus()
+    }
+  }, [loading])
+
   async function sendMessage() {
     if (!input.trim() || loading) return
     const userMsg = input.trim()
     setInput('')
     setMessages((prev) => [...prev, { role: 'user', content: userMsg }])
     setLoading(true)
+
+    // Scroll to bottom immediately after user message
+    setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }, 50)
 
     try {
       const res = await fetch('/api/chat', {
@@ -123,6 +137,11 @@ export default function ChatWindow() {
       height: '100dvh',
       backgroundColor: '#020817',
       overflow: 'hidden',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
     }}>
 
       {/* Navbar */}
@@ -133,14 +152,14 @@ export default function ChatWindow() {
         display: 'flex',
         alignItems: 'center',
         gap: '6px',
-        padding: '10px 20px',
+        padding: '8px 16px',
         backgroundColor: '#0f172a',
         borderBottom: '1px solid #1e293b',
         flexShrink: 0,
       }}>
         <span style={{
           color: '#475569',
-          fontSize: '12px',
+          fontSize: '11px',
           marginRight: '8px',
           whiteSpace: 'nowrap',
           flexShrink: 0,
@@ -159,29 +178,34 @@ export default function ChatWindow() {
       </div>
 
       {/* Messages */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '16px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-        WebkitOverflowScrolling: 'touch',
-      }}>
+      <div
+        ref={messagesRef}
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '16px 12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+        }}
+      >
         {messages.map((m, i) => (
           <div key={i} style={{
             display: 'flex',
             justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
           }}>
             <div style={{
-              maxWidth: '80%',
-              padding: '12px 16px',
+              maxWidth: '78%',
+              padding: '10px 14px',
               borderRadius: m.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
               backgroundColor: m.role === 'user' ? '#2563eb' : '#1e293b',
               color: m.role === 'user' ? 'white' : '#e2e8f0',
               fontSize: '15px',
-              lineHeight: '1.6',
+              lineHeight: '1.55',
               wordBreak: 'break-word',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
             }}>
               {m.content}
             </div>
@@ -191,78 +215,98 @@ export default function ChatWindow() {
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
             <div style={{
-              padding: '12px 16px',
+              padding: '10px 16px',
               borderRadius: '18px 18px 18px 4px',
               backgroundColor: '#1e293b',
               display: 'flex',
-              gap: '4px',
+              gap: '5px',
               alignItems: 'center'
             }}>
               {[0, 150, 300].map((delay) => (
                 <span key={delay} style={{
-                  width: '8px',
-                  height: '8px',
+                  width: '7px',
+                  height: '7px',
                   borderRadius: '50%',
                   backgroundColor: '#475569',
                   display: 'inline-block',
-                  animation: 'bounce 1s infinite',
+                  animation: 'bounce 1.2s infinite ease-in-out',
                   animationDelay: `${delay}ms`
                 }} />
               ))}
             </div>
           </div>
         )}
-        <div ref={bottomRef} />
+        <div ref={bottomRef} style={{ height: '4px' }} />
       </div>
 
       {/* Input */}
       <div style={{
-        padding: '12px 16px',
+        padding: '10px 12px',
         backgroundColor: '#0f172a',
         borderTop: '1px solid #1e293b',
         flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          alignItems: 'center',
+          backgroundColor: '#1e293b',
+          borderRadius: '24px',
+          padding: '6px 6px 6px 16px',
+          border: '1px solid #334155',
+        }}>
           <input
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-            placeholder="Type your message..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                sendMessage()
+              }
+            }}
+            placeholder="Message..."
             disabled={loading || generatingBlueprint}
+            autoComplete="off"
+            autoCorrect="on"
+            autoCapitalize="sentences"
             style={{
               flex: 1,
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
+              background: 'none',
+              border: 'none',
               color: 'white',
-              padding: '12px 16px',
-              borderRadius: '12px',
               fontSize: '16px',
               outline: 'none',
-              opacity: loading || generatingBlueprint ? 0.5 : 1,
               minWidth: 0,
+              opacity: loading || generatingBlueprint ? 0.5 : 1,
             }}
           />
           <button
             onClick={sendMessage}
             disabled={loading || generatingBlueprint || !input.trim()}
             style={{
-              backgroundColor: '#2563eb',
+              backgroundColor: input.trim() && !loading ? '#2563eb' : '#1e3a5f',
               color: 'white',
-              padding: '12px 20px',
-              borderRadius: '12px',
-              fontWeight: '600',
-              fontSize: '15px',
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
               border: 'none',
-              cursor: loading || generatingBlueprint || !input.trim() ? 'not-allowed' : 'pointer',
-              opacity: loading || generatingBlueprint || !input.trim() ? 0.5 : 1,
+              cursor: input.trim() && !loading ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               flexShrink: 0,
-              whiteSpace: 'nowrap',
+              transition: 'background-color 0.2s',
             }}
           >
-            Send
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M22 2L11 13" />
+              <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+            </svg>
           </button>
         </div>
       </div>
+
     </div>
   )
 }
