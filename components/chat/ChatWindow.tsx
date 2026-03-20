@@ -255,32 +255,37 @@ export default function ChatWindow() {
           padding: '6px 6px 6px 16px',
           border: '1px solid #334155',
         }}>
-          <input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                sendMessage()
-              }
-            }}
-            placeholder="Message..."
-            disabled={loading || generatingBlueprint}
-            autoComplete="off"
-            autoCorrect="on"
-            autoCapitalize="sentences"
-            style={{
-              flex: 1,
-              background: 'none',
-              border: 'none',
-              color: 'white',
-              fontSize: '16px',
-              outline: 'none',
-              minWidth: 0,
-              opacity: loading || generatingBlueprint ? 0.5 : 1,
-            }}
-          />
+         <input
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              sendMessage()
+            }
+          }}
+          placeholder="Message..."
+          disabled={loading || generatingBlueprint}
+          type="text"
+          inputMode="text"
+          autoComplete="off"
+          autoCorrect="on"
+          autoCapitalize="sentences"
+          spellCheck={true}
+          data-form-type="other"
+          data-lpignore="true"
+          style={{
+            flex: 1,
+            background: 'none',
+            border: 'none',
+            color: 'white',
+            fontSize: '16px',
+            outline: 'none',
+            minWidth: 0,
+            opacity: loading || generatingBlueprint ? 0.5 : 1,
+          }}
+/>
           <button
             onClick={sendMessage}
             disabled={loading || generatingBlueprint || !input.trim()}
