@@ -39,7 +39,7 @@ const visionItems = [
   { label: 'Speed to market', desc: 'From idea to blueprint in one conversation. From blueprint to shipped product in weeks.' },
 ]
 
-const CHAT_WIDTH = 540
+const CHAT_WIDTH = 650
 
 export default function LandingPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
@@ -52,11 +52,21 @@ export default function LandingPage() {
   const [chatVisible, setChatVisible] = useState<number[]>([])
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null)
   const [barHeights, setBarHeights] = useState([0, 0, 0])
+  const [isMobile, setIsMobile] = useState(false)
   const visionRefs = [
     useRef<HTMLDivElement>(null),
     useRef<HTMLDivElement>(null),
     useRef<HTMLDivElement>(null),
   ]
+
+  useEffect(() => {
+    function checkMobile() {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   useEffect(() => {
     async function checkUser() {
@@ -137,9 +147,11 @@ export default function LandingPage() {
     { href: 'contact', label: 'Contact' },
   ]
 
-  return (
+ return (
     <main style={{
-      minHeight: '100vh', backgroundColor: '#ffffff', color: '#0f172a',
+      minHeight: '100vh',
+      backgroundColor: '#ffffff',
+      color: '#0f172a',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       overscrollBehavior: 'none',
     }}>
@@ -155,15 +167,9 @@ export default function LandingPage() {
           0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
           40% { opacity: 1; transform: scale(1); }
         }
-        .nav-link { color: #64748b !important; transition: color 0.15s !important; }
-        .nav-link:hover { color: #0f172a !important; }
-        .btn-primary { transition: background 0.15s !important; }
-        .btn-primary:hover { background: #1558b0 !important; }
-        .btn-ghost { transition: all 0.15s !important; }
-        .btn-ghost:hover { border-color: #94a3b8 !important; color: #0f172a !important; }
         .chat-inner {
           width: 100%;
-          aspect-ratio: 16/9;
+          aspect-ratio: 4/3;
           background: #ffffff;
           border: 1px solid #e2e8f0;
           border-radius: 16px;
@@ -177,121 +183,162 @@ export default function LandingPage() {
             aspect-ratio: unset !important;
             height: 440px !important;
           }
-          .hero-section {
-            flex-direction: column !important;
-            padding: 100px 24px 60px !important;
-            align-items: flex-start !important;
-          }
-          .process-grid {
-            grid-template-columns: 1fr !important;
-            gap: 40px !important;
-          }
-          .process-col {
-            padding-left: 0 !important;
-            padding-right: 0 !important;
-            border-right: none !important;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 40px;
-          }
-          .process-col:last-child { border-bottom: none !important; padding-bottom: 0 !important; }
+        }
+        .nav-desktop-links {
+          display: flex;
+          align-items: center;
+          gap: 28px;
+        }
+        .nav-desktop-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-shrink: 0;
+        }
+        .nav-mobile-btn {
+          display: none;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 8px;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        @media (max-width: 768px) {
+          .nav-desktop-links { display: none !important; }
+          .nav-desktop-actions { display: none !important; }
+          .nav-mobile-btn { display: flex !important; }
         }
       `}} />
 
       {/* NAV */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        height: '56px', display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', padding: '0 40px',
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        backdropFilter: 'blur(20px)',
         borderBottom: '1px solid #f1f5f9',
-        backgroundColor: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(20px)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Image src="/logo.png" alt="Wersute" width={28} height={28} style={{ borderRadius: '6px' }} />
-          <span style={{ fontSize: '15px', fontWeight: '700', letterSpacing: '-0.01em', color: '#0f172a' }}>Wersute</span>
+        <div style={{
+          height: '56px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 24px',
+        }}>
+          {/* Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            <Image src="/logo.png" alt="Wersute" width={28} height={28} style={{ borderRadius: '6px' }} />
+            <span style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>Wersute</span>
+          </div>
+
+          {/* Desktop center links */}
+          <div className="nav-desktop-links">
+            {navLinks.map(item => (
+              <a key={item.href} href={'#' + item.href}
+                onClick={e => smoothScroll(e, item.href)}
+                style={{ color: '#64748b', fontSize: '14px', textDecoration: 'none', fontWeight: '500' }}>
+                {item.label}
+              </a>
+            ))}
+          </div>
+
+          {/* Desktop right actions */}
+          <div className="nav-desktop-actions">
+            {userEmail ? (
+              <>
+                <div
+                  title={userEmail}
+                  onClick={() => { window.location.href = '/projects' }}
+                  style={{
+                    width: '30px', height: '30px', borderRadius: '50%',
+                    backgroundColor: '#1a6fd4', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', fontSize: '12px', fontWeight: '700',
+                    color: 'white', cursor: 'pointer',
+                  }}>
+                  {userEmail[0].toUpperCase()}
+                </div>
+                <a href="/chat" style={{
+                  backgroundColor: '#1a6fd4', color: 'white', padding: '7px 16px',
+                  borderRadius: '7px', fontSize: '13px', fontWeight: '600', textDecoration: 'none',
+                }}>Continue</a>
+                <button onClick={handleSignOut} style={{
+                  background: 'none', border: '1px solid #e2e8f0', color: '#64748b',
+                  padding: '7px 14px', borderRadius: '7px', fontSize: '13px', cursor: 'pointer',
+                }}>Sign out</button>
+              </>
+            ) : (
+              <>
+                <a href="/login" style={{ color: '#64748b', fontSize: '14px', textDecoration: 'none', fontWeight: '500' }}>
+                  Login
+                </a>
+                <a href="/login" style={{
+                  backgroundColor: '#1a6fd4', color: 'white', padding: '7px 16px',
+                  borderRadius: '7px', fontSize: '13px', fontWeight: '600', textDecoration: 'none',
+                }}>Get started</a>
+              </>
+            )}
+          </div>
+
+          {/* Mobile hamburger */}
+          <button
+            className="nav-mobile-btn"
+            onClick={() => setMenuOpen(o => !o)}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round">
+              {menuOpen
+                ? <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
+                : <><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></>
+              }
+            </svg>
+          </button>
         </div>
 
-        <div className="mobile-hidden" style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
-          {navLinks.map(item => (
-            <a key={item.href} href={'#' + item.href} onClick={e => smoothScroll(e, item.href)}
-              className="nav-link" style={{ fontSize: '14px', textDecoration: 'none', fontWeight: '500' }}>
-              {item.label}
-            </a>
-          ))}
-        </div>
-
-        <div className="mobile-hidden" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {userEmail ? (
-            <>
-              <div title={userEmail} onClick={() => { window.location.href = '/projects' }} style={{
-                width: '30px', height: '30px', borderRadius: '50%', backgroundColor: '#1a6fd4',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '12px', fontWeight: '700', color: 'white', cursor: 'pointer',
+        {/* Mobile dropdown */}
+        {menuOpen && (
+          <div style={{
+            backgroundColor: 'white',
+            borderTop: '1px solid #f1f5f9',
+            padding: '8px 0 16px',
+          }}>
+            {navLinks.map(item => (
+              <a
+                key={item.href}
+                href={'#' + item.href}
+                onClick={e => smoothScroll(e, item.href)}
+                style={{
+                  display: 'block', color: '#374151', fontSize: '15px',
+                  textDecoration: 'none', padding: '12px 24px',
+                  borderBottom: '1px solid #f8fafc', fontWeight: '500',
+                }}>
+                {item.label}
+              </a>
+            ))}
+            <div style={{ padding: '12px 24px 0' }}>
+              <a href={userEmail ? '/chat' : '/login'} style={{
+                display: 'block', backgroundColor: '#1a6fd4', color: 'white',
+                padding: '12px', borderRadius: '8px', fontSize: '14px',
+                fontWeight: '600', textDecoration: 'none', textAlign: 'center',
               }}>
-                {userEmail[0].toUpperCase()}
-              </div>
-              <a href="/chat" className="btn-primary" style={{
-                backgroundColor: '#1a6fd4', color: 'white', padding: '7px 16px',
-                borderRadius: '7px', fontSize: '13px', fontWeight: '600', textDecoration: 'none',
-              }}>Continue</a>
-              <button onClick={handleSignOut} className="btn-ghost" style={{
-                background: 'none', border: '1px solid #e2e8f0', color: '#64748b',
-                padding: '7px 14px', borderRadius: '7px', fontSize: '13px', cursor: 'pointer',
-              }}>Sign out</button>
-            </>
-          ) : (
-            <>
-              <a href="/login" className="nav-link" style={{ fontSize: '14px', textDecoration: 'none', fontWeight: '500' }}>Login</a>
-              <a href="/login" className="btn-primary" style={{
-                backgroundColor: '#1a6fd4', color: 'white', padding: '7px 16px',
-                borderRadius: '7px', fontSize: '13px', fontWeight: '600', textDecoration: 'none',
-              }}>Get started</a>
-            </>
-          )}
-        </div>
-
-        <button onClick={() => setMenuOpen(!menuOpen)} className="mobile-only"
-          style={{ background: 'none', border: 'none', color: '#0f172a', cursor: 'pointer', padding: '4px' }}>
-          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-            {menuOpen ? <path d="M6 18L18 6M6 6l12 12" /> : <path d="M4 6h16M4 12h16M4 18h16" />}
-          </svg>
-        </button>
+                {userEmail ? 'Continue Building' : 'Get started'}
+              </a>
+            </div>
+          </div>
+        )}
       </nav>
 
-      {/* Mobile menu */}
-      {menuOpen && (
-        <div className="mobile-only" style={{
-          position: 'fixed', top: '56px', left: 0, right: 0, zIndex: 99,
-          backgroundColor: 'white', borderBottom: '1px solid #f1f5f9',
-          padding: '12px 24px 20px', boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-        }}>
-          {navLinks.map(item => (
-            <a key={item.href} href={'#' + item.href} onClick={e => smoothScroll(e, item.href)} style={{
-              display: 'block', color: '#374151', fontSize: '15px', textDecoration: 'none',
-              padding: '12px 0', borderBottom: '1px solid #f8fafc', fontWeight: '500',
-            }}>{item.label}</a>
-          ))}
-          <div style={{ marginTop: '16px' }}>
-            <a href="/login" style={{
-              display: 'block', backgroundColor: '#1a6fd4', color: 'white', padding: '11px',
-              borderRadius: '8px', fontSize: '14px', fontWeight: '600',
-              textDecoration: 'none', textAlign: 'center',
-            }}>
-              {userEmail ? 'Continue Building' : 'Get started'}
-            </a>
-          </div>
-        </div>
-      )}
-
       {/* HERO */}
-      <section
-        className="hero-section"
-        style={{
-          minHeight: '100vh', display: 'flex', alignItems: 'center',
-          padding: '80px 60px', gap: '60px', flexWrap: 'wrap',
-          background: 'radial-gradient(ellipse 80% 60% at 60% -10%, rgba(26,111,212,0.07), transparent)',
-          maxWidth: '1440px', margin: '0 auto',
-        }}
-      >
+      <section style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '60px',
+        padding: isMobile ? '100px 24px 60px' : '80px 60px',
+        background: 'radial-gradient(ellipse 80% 60% at 60% -10%, rgba(26,111,212,0.07), transparent)',
+        maxWidth: '1440px',
+        margin: '0 auto',
+      }}>
         {/* Left */}
         <div style={{ flex: '1', minWidth: '260px' }}>
           <div style={{
@@ -309,7 +356,7 @@ export default function LandingPage() {
             letterSpacing: '-0.04em', lineHeight: '1.06',
             margin: '0 0 8px 0', color: '#0f172a',
           }}>
-            Your idea deserves
+            Your idea desedfdfrvessdfdsf
           </h1>
           <h1 style={{
             fontSize: 'clamp(30px, 3.5vw, 56px)', fontWeight: '700',
@@ -336,13 +383,13 @@ export default function LandingPage() {
           </p>
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <a href={userEmail ? '/chat' : '/login'} className="btn-primary" style={{
+            <a href={userEmail ? '/chat' : '/login'} style={{
               backgroundColor: '#1a6fd4', color: 'white', padding: '11px 26px',
               borderRadius: '8px', fontSize: '14px', fontWeight: '600', textDecoration: 'none',
             }}>
               {userEmail ? 'Continue building' : 'Start for free'}
             </a>
-            <a href="#how-it-works" onClick={e => smoothScroll(e, 'how-it-works')} className="btn-ghost" style={{
+            <a href="#how-it-works" onClick={e => smoothScroll(e, 'how-it-works')} style={{
               border: '1px solid #e2e8f0', color: '#64748b', padding: '11px 26px',
               borderRadius: '8px', fontSize: '14px', fontWeight: '500', textDecoration: 'none',
             }}>
@@ -353,9 +400,8 @@ export default function LandingPage() {
         </div>
 
         {/* Right — chat box */}
-        <div style={{ flexShrink: 0, width: '100%', maxWidth: `${CHAT_WIDTH}px` }}>
+        <div style={{ flexShrink: 0, width: '100%', maxWidth: isMobile ? '100%' : `${CHAT_WIDTH}px` }}>
           <div className="chat-inner">
-            {/* Chrome bar */}
             <div style={{
               padding: '12px 20px', borderBottom: '1px solid #f1f5f9',
               display: 'flex', alignItems: 'center', gap: '7px',
@@ -370,7 +416,6 @@ export default function LandingPage() {
               <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#4ade80' }} />
             </div>
 
-            {/* Messages */}
             <div style={{
               flex: 1, padding: '16px 20px',
               display: 'flex', flexDirection: 'column',
@@ -419,7 +464,6 @@ export default function LandingPage() {
               )}
             </div>
 
-            {/* Input */}
             <div style={{ padding: '0 16px 16px', flexShrink: 0 }}>
               <div style={{
                 padding: '10px 14px', backgroundColor: '#f8fafc',
@@ -442,7 +486,7 @@ export default function LandingPage() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section id="how-it-works" style={{ padding: '100px 60px', borderTop: '1px solid #f1f5f9' }}>
+      <section id="how-it-works" style={{ padding: isMobile ? '60px 24px' : '100px 60px', borderTop: '1px solid #f1f5f9' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <p style={{ fontSize: '12px', color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px', fontWeight: '600' }}>
             Process
@@ -450,12 +494,18 @@ export default function LandingPage() {
           <h2 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: '700', letterSpacing: '-0.03em', marginBottom: '64px', color: '#0f172a' }}>
             From idea to live product.
           </h2>
-          <div className="process-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+          }}>
             {steps.map((step, i) => (
-              <div key={i} className="process-col" style={{
-                paddingLeft: i > 0 ? '48px' : '0',
-                paddingRight: i < steps.length - 1 ? '48px' : '0',
-                borderRight: i < steps.length - 1 ? '1px solid #f1f5f9' : 'none',
+              <div key={i} style={{
+                paddingLeft: !isMobile && i > 0 ? '48px' : '0',
+                paddingRight: !isMobile && i < steps.length - 1 ? '48px' : '0',
+                borderRight: !isMobile && i < steps.length - 1 ? '1px solid #f1f5f9' : 'none',
+                borderBottom: isMobile && i < steps.length - 1 ? '1px solid #f1f5f9' : 'none',
+                paddingBottom: isMobile && i < steps.length - 1 ? '40px' : '0',
+                paddingTop: isMobile && i > 0 ? '40px' : '0',
               }}>
                 <div style={{
                   fontSize: '52px', fontWeight: '800', letterSpacing: '-0.04em', lineHeight: 1,
@@ -479,7 +529,7 @@ export default function LandingPage() {
       </section>
 
       {/* FEATURES */}
-      <section id="features" style={{ padding: '100px 60px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fafafa' }}>
+      <section id="features" style={{ padding: isMobile ? '60px 24px' : '100px 60px', borderTop: '1px solid #f1f5f9', backgroundColor: '#fafafa' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <p style={{ fontSize: '12px', color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px', fontWeight: '600' }}>
             Features
@@ -487,7 +537,7 @@ export default function LandingPage() {
           <h2 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: '700', letterSpacing: '-0.03em', marginBottom: '56px', color: '#0f172a' }}>
             Everything you need to ship.
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
             {features.map((item, i) => (
               <div key={i}
                 onMouseEnter={() => setHoveredFeature(i)}
@@ -521,9 +571,9 @@ export default function LandingPage() {
       </section>
 
       {/* VISION */}
-      <section id="vision" style={{ padding: '100px 60px', borderTop: '1px solid #f1f5f9' }}>
+      <section id="vision" style={{ padding: isMobile ? '60px 24px' : '100px 60px', borderTop: '1px solid #f1f5f9' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '80px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          <div style={{ flex: '1', minWidth: '280px' }}>
+          <div style={{ flex: '1', minWidth: '260px' }}>
             <p style={{ fontSize: '12px', color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '24px', fontWeight: '600' }}>
               Vision
             </p>
@@ -532,7 +582,7 @@ export default function LandingPage() {
             </h2>
             <div style={{ width: '40px', height: '3px', backgroundColor: '#1a6fd4', borderRadius: '2px' }} />
           </div>
-          <div style={{ flex: '1', minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
+          <div style={{ flex: '1', minWidth: '260px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
             {visionItems.map((item, i) => (
               <div key={i} ref={visionRefs[i]} style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
                 <div style={{
@@ -560,8 +610,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section style={{ backgroundColor: '#1a6fd4', padding: '100px 60px', textAlign: 'center' }}>
+     {/* CTA */}
+      <section style={{ backgroundColor: '#1a6fd4', padding: isMobile ? '60px 24px' : '100px 60px', textAlign: 'center' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
           <h2 style={{ fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: '700', letterSpacing: '-0.04em', color: 'white', margin: '0 0 20px 0' }}>
             Ready to build?
@@ -583,7 +633,8 @@ export default function LandingPage() {
 
       {/* FOOTER */}
       <footer id="contact" style={{
-        padding: '48px 60px', borderTop: '1px solid #f1f5f9',
+        padding: isMobile ? '40px 24px' : '48px 60px',
+        borderTop: '1px solid #f1f5f9',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -597,7 +648,7 @@ export default function LandingPage() {
             <span key={i} style={{ fontSize: '13px', color: '#64748b' }}>{item}</span>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: '20px' }}>
+       <div style={{ display: 'flex', gap: '20px' }}>
           {['Privacy Policy', 'Terms of Use'].map((item, i) => (
             <a key={i} href="#" style={{ fontSize: '13px', color: '#94a3b8', textDecoration: 'none' }}>{item}</a>
           ))}
