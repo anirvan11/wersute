@@ -6,6 +6,7 @@ import Navbar from '@/components/ui/Navbar'
 
 export default function AdminPage() {
   const [projects, setProjects] = useState<any[]>([])
+  const [pendingFreelancers, setPendingFreelancers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [authorized, setAuthorized] = useState(false)
 
@@ -30,9 +31,16 @@ export default function AdminPage() {
 
       setAuthorized(true)
 
-      const res = await fetch('/api/admin/projects')
-      const data = await res.json()
-      setProjects(data.projects || [])
+      const [projectsRes, pendingRes] = await Promise.all([
+        fetch('/api/admin/projects'),
+        fetch('/api/admin/freelancers?status=pending'),
+      ])
+
+      const projectsData = await projectsRes.json()
+      const pendingData = await pendingRes.json()
+
+      setProjects(projectsData.projects || [])
+      setPendingFreelancers(pendingData.freelancers || [])
       setLoading(false)
     }
     checkAndLoad()
@@ -45,7 +53,7 @@ export default function AdminPage() {
         backgroundColor: '#020817',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
       }}>
         <p style={{ color: '#475569' }}>Checking access...</p>
       </div>
@@ -56,11 +64,16 @@ export default function AdminPage() {
     <div style={{ minHeight: '100vh', backgroundColor: '#020817', color: 'white' }}>
       <Navbar />
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '48px 24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>All Projects</h1>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>Admin Panel</h1>
         <p style={{ color: '#64748b', marginBottom: '32px' }}>
-          {loading ? 'Loading...' : `${projects.length} total projects`}
+          {loading ? 'Loading...' : `${projects.length} projects · ${pendingFreelancers.length} pending approvals`}
         </p>
-        {!loading && <AdminProjectList projects={projects} />}
+        {!loading && (
+          <AdminProjectList
+            projects={projects}
+            pendingFreelancers={pendingFreelancers}
+          />
+        )}
       </div>
     </div>
   )
