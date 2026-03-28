@@ -356,7 +356,7 @@ export default function LandingPage() {
             letterSpacing: '-0.04em', lineHeight: '1.06',
             margin: '0 0 8px 0', color: '#0f172a',
           }}>
-            Your idea desedfdfrvessdfdsf
+            Your idea deserves
           </h1>
           <h1 style={{
             fontSize: 'clamp(30px, 3.5vw, 56px)', fontWeight: '700',
