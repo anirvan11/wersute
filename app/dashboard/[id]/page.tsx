@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { notFound } from 'next/navigation'
 import SignOutButton from '@/components/ui/SignOutButton'
 import FreelancerSelector from '@/components/dashboard/FreelancerSelector'
+import FounderChat from '@/components/dashboard/FounderChat'
 
 const STATUS_LABELS: Record<string, string> = {
   MATCHING: 'Finding your developer',
@@ -34,7 +35,6 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
 
   if (!project) return notFound()
 
-  // Fetch quotes + freelancers if READY_TO_SELECT
   let quotes: any[] = []
   if (project.status === 'READY_TO_SELECT') {
     const { data } = await supabaseAdmin
@@ -44,7 +44,6 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
     quotes = data || []
   }
 
-  // Fetch selected freelancer if assigned
   let selectedFreelancer = null
   if (project.selected_freelancer_id) {
     const { data } = await supabaseAdmin
@@ -55,8 +54,16 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
     selectedFreelancer = data
   }
 
+  const founderId = project.user_id ?? ''
   const statusIdx = STATUS_ORDER.indexOf(project.status)
   const b = project.blueprints?.structured_json
+
+  const chatAllowed = ['READY_TO_SELECT', 'DEVELOPER_ASSIGNED', 'IN_DEVELOPMENT', 'TESTING', 'COMPLETED']
+    .includes(project.status)
+
+  const chatFreelancers = selectedFreelancer
+    ? [{ id: selectedFreelancer.id, name: selectedFreelancer.name }]
+    : quotes.map((q: any) => ({ id: q.freelancers.id, name: q.freelancers.name }))
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -136,8 +143,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
                   ))}
                 </div>
               </div>
-              {selectedFreelancer.portfolio_url && (<a
-                
+              {selectedFreelancer.portfolio_url && (
+                <a
                   href={selectedFreelancer.portfolio_url}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -148,6 +155,17 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
               )}
             </div>
           </div>
+        )}
+
+        {/* Chat */}
+        {chatAllowed && founderId && chatFreelancers.length > 0 && (
+          <FounderChat
+            projectId={project.id}
+            projectName={project.name}
+            freelancers={chatFreelancers}
+            currentUserId={founderId}
+            status={project.status}
+          />
         )}
 
         {/* Blueprint Summary */}
