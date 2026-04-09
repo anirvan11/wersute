@@ -8,7 +8,6 @@ export async function POST(req: NextRequest) {
   try {
     const { blueprintId, userId, projectName } = await req.json()
 
-    // Create project record
     const { data: project, error } = await supabaseAdmin
       .from('projects')
       .insert({
@@ -22,14 +21,12 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error
 
-    // Log first status update
     await supabaseAdmin.from('status_updates').insert({
       project_id: project.id,
       status: 'MATCHING',
       note: 'Project submitted. Finding the right developer.',
     })
 
-    // Notify admin
     if (process.env.RESEND_API_KEY && process.env.ADMIN_EMAIL) {
       await resend.emails.send({
         from: 'onboarding@resend.dev',
