@@ -68,6 +68,18 @@ export default function AuthCallbackPage() {
     .eq('id', userId)
     .single()
 
+  // Don't create a founder row if this user is a freelancer
+  const { data: existingFreelancer } = await supabase
+    .from('freelancers')
+    .select('id')
+    .eq('user_id', userId)
+    .single()
+
+  if (existingFreelancer) {
+    window.location.replace('/freelancer/dashboard')
+    return
+  }
+
   if (!existingUser) {
     await supabase.from('users').insert({ id: userId, email, role: 'founder' })
   }

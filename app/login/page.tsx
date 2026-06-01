@@ -46,7 +46,14 @@ function LoginForm() {
         const { data, error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
         if (data.user) {
-          await supabase.from('users').insert({ id: data.user.id, email, role: 'founder' })
+          const { data: fl } = await supabase
+            .from('freelancers')
+            .select('id')
+            .eq('user_id', data.user.id)
+            .single()
+          if (!fl) {
+            await supabase.from('users').insert({ id: data.user.id, email, role: 'founder' })
+          }
         }
         router.replace(next || '/chat')
       } else {

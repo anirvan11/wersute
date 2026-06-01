@@ -8,57 +8,37 @@ const BLUEPRINT_SYSTEM = `You are a senior Indian startup consultant who has wor
 Given a conversation history between an AI advisor and a founder, produce an accurate product blueprint as JSON.
 Return ONLY valid JSON — no markdown, no backticks, no explanation whatsoever.
 
-=== TECH STACK RULES (STRICT) ===
-Only include technologies explicitly confirmed in the conversation. If not discussed, exclude it.
+=== SPECIAL REQUESTS DETECTION ===
+Scan the conversation for any EXPLICIT constraint the founder stated that the matched developer needs to know but that is NOT a product feature. Only capture things the founder actually said — never infer or invent.
 
-PLATFORM:
-- Mobile app confirmed → React Native (cross-platform) or Flutter
-- Web only → Next.js + Supabase
-- Both → React Native + Next.js (admin web)
-- Not discussed → default to Next.js (web)
+Capture things like:
+- Technology preferences: "I want to use Flutter", "build it in Django", "must use Next.js"
+- Hosting/infra requirements: "must be hosted in India", "needs to be on AWS"
+- Integrations explicitly named: "needs Razorpay", "integrate with Shopify"
+- Compliance needs: "must be GDPR compliant", "HIPAA required"
+- Design preferences: "minimal Linear-style design", "should look like Notion"
+- Any other explicit hard constraint the founder voiced
 
-PAYMENTS:
-- Online payments confirmed → Razorpay
-- Offline/manual → exclude payment SDK entirely
-
-MAPS/LOCATION:
-- Live GPS tracking confirmed → Google Maps API
-- Simple status updates only → exclude Google Maps
-- Not needed → exclude
-
-NOTIFICATIONS:
-- Push notifications confirmed → Firebase FCM
-- WhatsApp confirmed → WhatsApp Business API
-- SMS confirmed → Twilio or MSG91
-- Not needed → exclude all
-
-AUTH:
-- Social login (Google/Facebook) → NextAuth or Supabase Auth with OAuth
-- Email/phone signup → Supabase Auth
-- Admin-managed users → no self-signup, just admin panel
-
-REAL-TIME:
-- Live chat/tracking confirmed → Supabase Realtime or Socket.io
-- Not needed → exclude
-
-MEDIA:
-- File/image uploads confirmed → Supabase Storage or AWS S3
-- Not needed → exclude
+Rules for special_requests:
+- Include the field ONLY if there is at least one explicit request. If none, OMIT the field entirely (do not output an empty array).
+- Each entry is a short, plain-language string capturing the founder's stated constraint.
+- Do NOT include features here — features belong in core_features.
+- Do NOT infer or assume. If the founder didn't say it explicitly, it does not go here.
 
 === COST ESTIMATION RULES (INR, based on Indian market rates 2025) ===
 Indian freelancer rate: ₹800–₹2,000/hr | Agency rate: ₹2,500–₹5,000/hr
 
 Calculate by adding up confirmed components:
 
-BASE (always included):
-- Web app (Next.js): Budget ₹60,000–₹1,20,000 | Premium ₹1,50,000–₹3,00,000
-- Mobile app (React Native): Budget ₹1,20,000–₹2,50,000 | Premium ₹3,00,000–₹6,00,000
+BASE:
+- Web app: Budget ₹60,000–₹1,20,000 | Premium ₹1,50,000–₹3,00,000
+- Mobile app: Budget ₹1,20,000–₹2,50,000 | Premium ₹3,00,000–₹6,00,000
 - Both web + mobile: Budget ₹1,80,000–₹3,50,000 | Premium ₹4,50,000–₹10,00,000
 
 ADD per confirmed component:
-- Payment gateway (Razorpay): +₹25,000–₹40,000 | +₹60,000–₹1,20,000
-- Google Maps / GPS: +₹35,000–₹70,000 | +₹80,000–₹1,50,000
-- Push notifications (Firebase): +₹15,000–₹25,000 | +₹40,000–₹80,000
+- Payment gateway: +₹25,000–₹40,000 | +₹60,000–₹1,20,000
+- Maps / GPS: +₹35,000–₹70,000 | +₹80,000–₹1,50,000
+- Push notifications: +₹15,000–₹25,000 | +₹40,000–₹80,000
 - WhatsApp Business API: +₹20,000–₹35,000 | +₹50,000–₹1,00,000
 - Real-time features: +₹40,000–₹80,000 | +₹1,00,000–₹2,00,000
 - Admin dashboard: +₹40,000–₹70,000 | +₹80,000–₹1,50,000
@@ -73,9 +53,7 @@ COMPLEXITY:
 - high: 6+ features, mobile+web, multiple integrations or real-time
 
 TIMELINE:
-- low complexity: 30-60 days
-- medium complexity: 60-120 days  
-- high complexity: 120-180 days
+- low: 30-60 days | medium: 60-120 days | high: 120-180 days
 
 === OUTPUT SCHEMA (strictly follow) ===
 {
@@ -83,7 +61,7 @@ TIMELINE:
   "problem_statement": "the core problem being solved",
   "target_users": "specific description of who the users are",
   "core_features": ["only features confirmed in conversation"],
-  "suggested_tech_stack": ["only confirmed technologies"],
+  "special_requests": ["only explicit founder-stated constraints — OMIT this key entirely if none"],
   "complexity_level": "low|medium|high",
   "estimated_timeline_days": 90,
   "estimated_cost_range": {
@@ -93,34 +71,50 @@ TIMELINE:
   }
 }`
 
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 async function generateBlueprint(messages: any[], attempt = 1): Promise<any> {
-  const response = await anthropic.messages.create({
-    model: CLAUDE_MODEL,
-    max_tokens: 2048,
-    system: BLUEPRINT_SYSTEM,
-    messages: [
-      ...messages.map((m: any) => ({ role: m.role, content: m.content })),
-      { role: 'user', content: 'Generate the blueprint JSON now based on our conversation.' },
-    ],
-  })
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : ''
-
+  const MAX_ATTEMPTS = 3
   try {
+    const response = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      max_tokens: 2048,
+      system: BLUEPRINT_SYSTEM,
+      messages: [
+        ...messages.map((m: any) => ({ role: m.role, content: m.content })),
+        { role: 'user', content: 'Generate the blueprint JSON now based on our conversation.' },
+      ],
+    })
+
+    const text = response.content[0].type === 'text' ? response.content[0].text : ''
     const json = JSON.parse(text.replace(/```json|```/g, '').trim())
     return BlueprintSchema.parse(json)
-  } catch (e) {
-    if (attempt < 3) {
-      console.warn(`Blueprint attempt ${attempt} failed, retrying...`)
+  } catch (e: any) {
+    // Distinguish transient API errors from parse/validation errors — both retry, but log differently
+    const isApiError = e?.status === 429 || e?.status === 529 || e?.status >= 500
+    console.warn(
+      `Blueprint attempt ${attempt}/${MAX_ATTEMPTS} failed (${isApiError ? 'API error' : 'parse/validation'}):`,
+      e?.message ?? e
+    )
+
+    if (attempt < MAX_ATTEMPTS) {
+      // Backoff only matters for API errors; harmless for parse retries
+      await sleep(attempt * 800)
       return generateBlueprint(messages, attempt + 1)
     }
-    throw new Error('Blueprint generation failed after 2 retries')
+    throw new Error(`Blueprint generation failed after ${MAX_ATTEMPTS} attempts: ${e?.message ?? 'unknown'}`)
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { conversationId, projectName } = await req.json()
+    const { conversationId } = await req.json()
+
+    if (!conversationId) {
+      return NextResponse.json({ error: 'Missing conversationId' }, { status: 400 })
+    }
 
     const { data: conversation, error } = await supabaseAdmin
       .from('conversations')
@@ -143,8 +137,8 @@ export async function POST(req: NextRequest) {
     if (saveError) throw saveError
 
     return NextResponse.json({ blueprint, blueprintId: saved.id })
-  } catch (error) {
-    console.error('Blueprint error:', error)
+  } catch (error: any) {
+    console.error('Blueprint error:', error?.message ?? error)
     return NextResponse.json({ error: 'Blueprint generation failed' }, { status: 500 })
   }
 }
