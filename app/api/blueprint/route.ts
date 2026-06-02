@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { anthropic, CLAUDE_MODEL } from '@/lib/claude'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { BlueprintSchema } from '@/lib/schema'
+export const maxDuration = 60
 
 const BLUEPRINT_SYSTEM = `You are a senior Indian startup consultant who has worked with 200+ Indian startups on budgeting and technical scoping.
 

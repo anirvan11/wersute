@@ -25,6 +25,12 @@ const STAGE_LABELS: Record<string, string> = {
   BLUEPRINT_GENERATION: 'Blueprint',
 }
 
+// Phrases that mean "Wari is ready to generate" even if the FSM stage hasn't flipped yet
+const GENERATE_TRIGGERS = [
+  'generating your blueprint now',
+  'i have everything i need',
+]
+
 export default function ChatWindow() {
   const router = useRouter()
   const [authChecked, setAuthChecked] = useState(false)
@@ -37,6 +43,7 @@ export default function ChatWindow() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [generatingBlueprint, setGeneratingBlueprint] = useState(false)
+  const [generationFailed, setGenerationFailed] = useState(false)
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [stage, setStage] = useState('DISCOVERY')
   const [userId, setUserId] = useState<string | null>(null)
@@ -46,29 +53,29 @@ export default function ChatWindow() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, generatingBlueprint])
 
   useEffect(() => {
-  async function checkAuth() {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      router.replace('/login')
-      return
+    async function checkAuth() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.replace('/login')
+        return
+      }
+      setUserId(session.user.id)
+      setAuthChecked(true)
     }
-    setUserId(session.user.id)
-    setAuthChecked(true)
-  }
-  checkAuth()
-}, [])
+    checkAuth()
+  }, [])
 
   useEffect(() => {
-    if (!loading && authChecked) {
+    if (!loading && authChecked && !generatingBlueprint) {
       inputRef.current?.focus()
     }
-  }, [loading, authChecked])
+  }, [loading, authChecked, generatingBlueprint])
 
   async function sendMessage() {
-    if (!input.trim() || loading) return
+    if (!input.trim() || loading || generatingBlueprint) return
     const userMsg = input.trim()
     setInput('')
     setMessages((prev) => [...prev, { role: 'user', content: userMsg }])
@@ -89,8 +96,14 @@ export default function ChatWindow() {
       setConversationId(data.conversationId)
       setStage(data.stage)
 
-      if (data.stage === 'BLUEPRINT_GENERATION' && !generatingBlueprint) {
-        generateBlueprint(data.conversationId)
+      // Trigger generation if the stage flipped OR Wari signalled it in the message text.
+      const text = (data.message || '').toLowerCase()
+      const phraseTriggered = GENERATE_TRIGGERS.some((p) => text.includes(p))
+      const shouldGenerate = data.stage === 'BLUEPRINT_GENERATION' || phraseTriggered
+
+      if (shouldGenerate && !generatingBlueprint) {
+        // small delay so the user reads Wari's confirmation line before the loader takes over
+        setTimeout(() => generateBlueprint(data.conversationId), 600)
       }
     } catch {
       setMessages((prev) => [
@@ -103,28 +116,35 @@ export default function ChatWindow() {
   }
 
   async function generateBlueprint(convId: string) {
+    if (!convId) return
+    setGenerationFailed(false)
     setGeneratingBlueprint(true)
-    setMessages((prev) => [
-      ...prev,
-      { role: 'assistant', content: '⚙️ Generating your blueprint now — this takes about 10 seconds...' },
-    ])
+
+    // Client-side timeout so we never hang forever. 75s gives the 60s server function headroom.
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 75000)
 
     try {
       const res = await fetch('/api/blueprint', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversationId: convId }),
+        signal: controller.signal,
       })
+      clearTimeout(timeout)
+
+      if (!res.ok) throw new Error('Generation failed')
       const data = await res.json()
+
       if (data.blueprintId) {
         router.push(`/blueprint/${data.blueprintId}`)
+      } else {
+        throw new Error('No blueprint returned')
       }
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: 'Blueprint generation failed. Please try again.' },
-      ])
+      clearTimeout(timeout)
       setGeneratingBlueprint(false)
+      setGenerationFailed(true)
     }
   }
 
@@ -157,6 +177,17 @@ export default function ChatWindow() {
       right: 0,
       bottom: 0,
     }}>
+      <style>{`
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes shimmer {
+          0% { background-position: -400px 0; }
+          100% { background-position: 400px 0; }
+        }
+      `}</style>
 
       <Navbar />
 
@@ -249,6 +280,95 @@ export default function ChatWindow() {
             </div>
           </div>
         )}
+
+        {/* Blueprint generation loader — animated, replaces the static text bubble */}
+        {generatingBlueprint && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '16px',
+              padding: '28px 32px',
+              borderRadius: '20px',
+              backgroundColor: '#0f172a',
+              border: '1px solid #1e293b',
+              maxWidth: '320px',
+              width: '100%',
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                border: '3px solid #1e293b',
+                borderTopColor: '#3b82f6',
+                animation: 'spin 0.8s linear infinite',
+              }} />
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ color: 'white', fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>
+                  Building your blueprint
+                </div>
+                <div style={{ color: '#64748b', fontSize: '13px', lineHeight: 1.5 }}>
+                  Wari is scoping features, stack, and costs. This takes 15–30 seconds.
+                </div>
+              </div>
+              {/* shimmer skeleton lines */}
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                {['90%', '75%', '85%'].map((w, i) => (
+                  <div key={i} style={{
+                    height: '8px',
+                    width: w,
+                    borderRadius: '999px',
+                    background: 'linear-gradient(90deg, #1e293b 25%, #2d3b52 50%, #1e293b 75%)',
+                    backgroundSize: '400px 100%',
+                    animation: 'shimmer 1.4s infinite linear',
+                  }} />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Generation failed — retry without losing the conversation */}
+        {generationFailed && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '20px 24px',
+              borderRadius: '16px',
+              backgroundColor: '#0f172a',
+              border: '1px solid rgba(239,68,68,0.3)',
+              maxWidth: '320px',
+              textAlign: 'center',
+            }}>
+              <div style={{ color: '#f87171', fontSize: '14px', fontWeight: 600 }}>
+                Blueprint generation timed out
+              </div>
+              <div style={{ color: '#64748b', fontSize: '13px', lineHeight: 1.5 }}>
+                Your conversation is saved. This sometimes happens under load — just try again.
+              </div>
+              <button
+                onClick={() => conversationId && generateBlueprint(conversationId)}
+                style={{
+                  backgroundColor: '#2563eb',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 24px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Retry generation
+              </button>
+            </div>
+          </div>
+        )}
+
         <div ref={bottomRef} style={{ height: '4px' }} />
       </div>
 
@@ -285,7 +405,7 @@ export default function ChatWindow() {
             spellCheck={true}
             data-form-type="other"
             data-lpignore="true"
-            placeholder="Message..."
+            placeholder={generatingBlueprint ? 'Generating blueprint…' : 'Message...'}
             disabled={loading || generatingBlueprint}
             style={{
               flex: 1,
@@ -302,13 +422,13 @@ export default function ChatWindow() {
             type="submit"
             disabled={loading || generatingBlueprint || !input.trim()}
             style={{
-              backgroundColor: input.trim() && !loading ? '#2563eb' : '#1e3a5f',
+              backgroundColor: input.trim() && !loading && !generatingBlueprint ? '#2563eb' : '#1e3a5f',
               color: 'white',
               width: '36px',
               height: '36px',
               borderRadius: '50%',
               border: 'none',
-              cursor: input.trim() && !loading ? 'pointer' : 'not-allowed',
+              cursor: input.trim() && !loading && !generatingBlueprint ? 'pointer' : 'not-allowed',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
