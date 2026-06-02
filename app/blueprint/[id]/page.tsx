@@ -50,22 +50,24 @@ export default async function BlueprintPage({ params }: { params: Promise<{ id: 
             </ul>
           </div>
 
-          {/* Tech Stack */}
-          <div className="bg-slate-900 rounded-xl p-6 border border-slate-800">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-4">
-              Suggested Tech Stack
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {b.suggested_tech_stack.map((t: string) => (
-                <span
-                  key={t}
-                  className="bg-blue-500/10 border border-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-sm"
-                >
-                  {t}
-                </span>
-              ))}
+          {/* Special Requests */}
+          {b.special_requests && b.special_requests.length > 0 && (
+            <div className="bg-slate-900 rounded-xl p-6 border border-slate-800">
+              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-4">
+                Special Requests
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {b.special_requests.map((r: string) => (
+                  <span
+                    key={r}
+                    className="bg-amber-500/10 border border-amber-500/20 text-amber-300 px-3 py-1 rounded-full text-sm"
+                  >
+                    {r}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Complexity + Timeline */}
           <div className="grid grid-cols-2 gap-4">

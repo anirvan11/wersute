@@ -91,7 +91,14 @@ async function generateBlueprint(messages: any[], attempt = 1): Promise<any> {
 
     const text = response.content[0].type === 'text' ? response.content[0].text : ''
     const json = JSON.parse(text.replace(/```json|```/g, '').trim())
+
+    // Safety: model sometimes returns more features than the schema cap. Keep the top 15.
+    if (Array.isArray(json.core_features) && json.core_features.length > 15) {
+      json.core_features = json.core_features.slice(0, 15)
+    }
+
     return BlueprintSchema.parse(json)
+    
   } catch (e: any) {
     // Distinguish transient API errors from parse/validation errors — both retry, but log differently
     const isApiError = e?.status === 429 || e?.status === 529 || e?.status >= 500

@@ -145,10 +145,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
               </div>
               {selectedFreelancer.portfolio_url && (
                 <a
-                  href={selectedFreelancer.portfolio_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-400 text-sm hover:underline"
+                   href={`/freelancer/${selectedFreelancer.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 text-sm hover:underline whitespace-nowrap"
                 >
                   Portfolio →
                 </a>
@@ -168,7 +168,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
           />
         )}
 
-        {/* Blueprint Summary */}
+        {/* Blueprint Summary + full collapsible */}
         {b && (
           <div className="bg-slate-900 rounded-xl p-6 border border-slate-800">
             <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-4">
@@ -194,6 +194,65 @@ export default async function DashboardPage({ params }: { params: Promise<{ id: 
                 </span>
               </div>
             </div>
+
+            {/* Collapsible full blueprint */}
+            <details className="mt-6 group">
+              <summary className="cursor-pointer list-none flex items-center gap-2 text-blue-400 text-sm font-medium select-none">
+                <span className="transition-transform group-open:rotate-90">▶</span>
+                View full blueprint
+              </summary>
+
+              <div className="mt-5 space-y-5 border-t border-slate-800 pt-5">
+
+                {/* Target Users */}
+                <div>
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Target Users</h3>
+                  <p className="text-slate-300 text-sm leading-relaxed">{b.target_users}</p>
+                </div>
+
+                {/* Core Features */}
+                <div>
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Core Features</h3>
+                  <ul className="space-y-2.5">
+                    {b.core_features?.map((f: string, i: number) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <span className="text-blue-400 font-bold text-xs mt-0.5">{String(i + 1).padStart(2, '0')}</span>
+                        <span className="text-slate-300 text-sm leading-relaxed">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Special Requests — only if present */}
+                {b.special_requests && b.special_requests.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Special Requests</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {b.special_requests.map((r: string) => (
+                        <span
+                          key={r}
+                          className="bg-amber-500/10 border border-amber-500/20 text-amber-300 px-3 py-1 rounded-full text-sm"
+                        >
+                          {r}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Premium tier */}
+                {b.estimated_cost_range?.premium && (
+                  <div>
+                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Premium Tier Estimate</h3>
+                    <p className="text-white text-sm font-semibold">
+                      ₹{(b.estimated_cost_range.premium.min / 100000).toFixed(1)}L – ₹{(b.estimated_cost_range.premium.max / 100000).toFixed(1)}L
+                      <span className="text-slate-500 font-normal ml-2">boutique agency rate</span>
+                    </p>
+                  </div>
+                )}
+
+              </div>
+            </details>
           </div>
         )}
       </div>

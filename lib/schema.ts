@@ -4,8 +4,8 @@ export const BlueprintSchema = z.object({
   startup_summary: z.string().min(10),
   problem_statement: z.string().min(10),
   target_users: z.string().min(5),
-  core_features: z.array(z.string()).min(2).max(8),
-  suggested_tech_stack: z.array(z.string()).min(1),
+  core_features: z.array(z.string()).min(2).max(20),
+  special_requests: z.array(z.string()).optional(),
   complexity_level: z.enum(['low', 'medium', 'high']),
   estimated_timeline_days: z.number().min(7).max(365),
   estimated_cost_range: z.object({

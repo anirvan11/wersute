@@ -157,9 +157,9 @@ export default function FreelancerDashboard() {
                       </div>
                     </div>
                     <div>
-                      <span style={{ color: '#475569', fontSize: '12px' }}>Tech stack</span>
+                      <span style={{ color: '#475569', fontSize: '12px' }}>Features</span>
                       <div style={{ color: 'white', fontSize: '14px', fontWeight: '600', marginTop: '2px' }}>
-                        {b.suggested_tech_stack?.slice(0, 3).join(', ')}
+                        {b.core_features?.length ?? 0} planned
                       </div>
                     </div>
                   </div>

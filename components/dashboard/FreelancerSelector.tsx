@@ -124,10 +124,10 @@ export default function FreelancerSelector({ projectId, quotes }: { projectId: s
                     </button>
                     {f.portfolio_url && ( <a
                       
-                        href={f.portfolio_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#60a5fa', fontSize: '13px', textDecoration: 'none' }}
+                        href={`/freelancer/${f.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#60a5fa', fontSize: '13px', textDecoration: 'none', whiteSpace: 'nowrap' }}
                       >
                         View portfolio →
                       </a>

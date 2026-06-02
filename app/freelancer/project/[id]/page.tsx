@@ -130,10 +130,12 @@ export default function FreelancerProjectPage() {
       y += 4
       addDivider()
 
-      addSection('SUGGESTED TECH STACK')
-      addText(b.suggested_tech_stack?.join(', '), 11)
-      y += 4
-      addDivider()
+      if (b.special_requests && b.special_requests.length > 0) {
+        addSection('SPECIAL REQUESTS')
+        b.special_requests.forEach((r: string) => addText(`• ${r}`, 11))
+        y += 4
+        addDivider()
+      }
 
       addSection('PROJECT DETAILS')
       addText(`Complexity: ${b.complexity_level}`, 11)
@@ -311,17 +313,19 @@ export default function FreelancerProjectPage() {
               </div>
             </div>
 
-            <div style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '24px', marginBottom: '16px' }}>
-              <h2 style={{ color: '#64748b', fontSize: '11px', fontWeight: '600', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px' }}>Suggested Tech Stack</h2>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {b.suggested_tech_stack?.map((t: string) => (
-                  <span key={t} style={{
-                    backgroundColor: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)',
-                    color: '#93c5fd', padding: '6px 14px', borderRadius: '999px', fontSize: '13px',
-                  }}>{t}</span>
-                ))}
+            {b.special_requests && b.special_requests.length > 0 && (
+              <div style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '24px', marginBottom: '16px' }}>
+                <h2 style={{ color: '#64748b', fontSize: '11px', fontWeight: '600', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px' }}>Special Requests</h2>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {b.special_requests.map((r: string) => (
+                    <span key={r} style={{
+                      backgroundColor: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)',
+                      color: '#fcd34d', padding: '6px 14px', borderRadius: '999px', fontSize: '13px',
+                    }}>{r}</span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '16px' }}>
               {[
